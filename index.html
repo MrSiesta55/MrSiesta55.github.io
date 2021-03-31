@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>A SPA Template - bootstrap</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
+        integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+        integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous">
+    </script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
+        integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous">
+    </script>
+      <script src="https://hammerjs.github.io/dist/hammer.min.js"></script>
+   
+    
+    <script>
+        
+        
+        function showPage(p){
+            
+            pageArr=document.getElementsByClassName("page");
+            for(let i=0;i<pageArr.length;i++){
+                let page=pageArr[i];
+                page.style.display="none";
+            }
+            document.getElementById("page"+p).style.display="block";
+ 
+            btnArr = document.getElementsByClassName("btn");
+            for(let i=0;i<btnArr.length;i++){
+                let btn=btnArr[i];
+                btn.classList.remove("active");
+            }
+            
+            let navBtn = document.getElementById("nav"+p);
+            if(navBtn) {
+                navBtn.classList.add("active");
+            }
+        }
+      
+       // Array of all the questions and choices to populate the questions. This might be saved in some JSON file or a database and we would have to read the data in.
+       var quiztitle = "Capital Quiz";
+
+
+var quiz = [
+       {
+           "question" : "What is the capital of Chile?",
+           "image" : "",
+           "choices" : [
+                                   "Santiago",
+                                   "Buenos Aires",
+                                   "Montevideo",
+                                   "La Paz"
+                               ],
+                               
+           "correct" : "Santiago",
+           "explanation" : "Santiago",
+       },
+       {
+           "question" : "What is the capital of Burundi?",
+           "image" : "",
+           "choices" : [
+                                   "Uvira",
+                                   "Kigali",
+                                   "Bujumbura",
+                                   "Bukavu"
+                               ],
+           "correct" : "Bujumbura",
+           "explanation" : "Bujumbura",
+       },
+       {
+           "question" : "What is the capital of Oman?",
+           "image" : "",
+           "choices" : [
+                                   "Qaysad",
+                                   "Nizwa",
+                                   "Muskat",
+                                   "Duqm"
+                               ],
+           "correct" : "Muskat",
+           "explanation" : "Muskat",
+       },
+       {
+           "question" : "What is the capital of Nepal?",
+           "image" : "",
+           "choices" : [
+                                   "Bhaktapur ",
+                                   "Nizwa",
+                                   "Darkha ",
+                                   "Katmandu"
+                               ],
+           "correct" : "Katmandu",
+           "explanation" : "Katmandu",
+       },
+     
+
+   ];
+
+
+var currentquestion = 0,
+    score = 0,
+    submt = true,
+    picked;
+
+jQuery(document).ready(function ($) {
+
+
+    function htmlEncode(value) {
+        return $(document.createElement('div')).text(value).html();
+    }
+
+
+    function addChoices(choices) {
+        if (typeof choices !== "undefined" && $.type(choices) == "array") {
+            $('#choice-block').empty();
+            for (var i = 0; i < choices.length; i++) {
+                $(document.createElement('li')).addClass('choice choice-box').attr('data-index', i).text(choices[i]).appendTo('#choice-block');
+            }
+        }
+    }
+
+    function nextQuestion() {
+        submt = true;
+        $('#explanation').empty();
+        $('#question').text(quiz[currentquestion]['question']);
+        $('#pager').text('Question ' + Number(currentquestion + 1) + ' of ' + quiz.length);
+        if (quiz[currentquestion].hasOwnProperty('image') && quiz[currentquestion]['image'] != "") {
+            if ($('#question-image').length == 0) {
+                $(document.createElement('img')).addClass('question-image').attr('id', 'question-image').attr('src', quiz[currentquestion]['image']).attr('alt', htmlEncode(quiz[currentquestion]['question'])).insertAfter('#question');
+            } else {
+                $('#question-image').attr('src', quiz[currentquestion]['image']).attr('alt', htmlEncode(quiz[currentquestion]['question']));
+            }
+        } else {
+            $('#question-image').remove();
+        }
+        addChoices(quiz[currentquestion]['choices']);
+        setupButtons();
+
+
+    }
+
+
+    function processQuestion(choice) {
+        if (quiz[currentquestion]['choices'][choice] == quiz[currentquestion]['correct']) {
+            document.getElementById("flipSide").play();
+            $('.choice').eq(choice).css({
+                'background-color': '#50D943'
+                
+            });
+            $('#explanation').html('<strong>Correct!</strong> ' + htmlEncode(quiz[currentquestion]['explanation']));
+            score++;
+        } else {
+            document.getElementById("flipSide2").play();
+            $('.choice').eq(choice).css({
+                'background-color': '#D92623'
+            });
+            $('#explanation').html('<strong>Incorrect.</strong> ' + htmlEncode(quiz[currentquestion]['explanation']));
+        }
+        currentquestion++;
+        $('#submitbutton').html('NEXT QUESTION &raquo;').on('click', function () {
+            if (currentquestion == quiz.length) {
+                endQuiz();
+            } else {
+                $(this).text('Check Answer').css({
+                    'color': '#222'
+                }).off('click');
+                nextQuestion();
+            }
+        })
+    }
+
+
+    function setupButtons() {
+        $('.choice').on('mouseover', function () {
+            $(this).css({
+                'background-color': '#e1e1e1'
+            });
+        });
+        $('.choice').on('mouseout', function () {
+            $(this).css({
+                'background-color': '#fff'
+            });
+        })
+        $('.choice').on('click', function () {
+            picked = $(this).attr('data-index');
+            $('.choice').removeAttr('style').off('mouseout mouseover');
+            $(this).css({
+                'border-color': '#222',
+                'font-weight': 700,
+                'background-color': '#c1c1c1'
+            });
+            if (submt) {
+                submt = false;
+                $('#submitbutton').css({
+                    'color': '#000'
+                }).on('click', function () {
+                    $('.choice').off('click');
+                    $(this).off('click');
+                    processQuestion(picked);
+                });
+            }
+        })
+    }
+
+
+    function endQuiz() {
+        $('#explanation').empty();
+        $('#question').empty();
+        $('#choice-block').empty();
+        $('#submitbutton').remove();
+        $('#question').text("You got " + score + " out of " + quiz.length + " correct.");
+        $(document.createElement('h2')).css({
+            'text-align': 'center',
+            'font-size': '4em'
+        }).text(Math.round(score / quiz.length * 100) + '%').insertAfter('#question');
+    }
+
+
+    function init() {
+        //add title
+        if (typeof quiztitle !== "undefined" && $.type(quiztitle) === "string") {
+            $(document.createElement('h1')).text(quiztitle).appendTo('#frame');
+        } else {
+            $(document.createElement('h1')).text("Quiz").appendTo('#frame');
+        }
+
+        //add pager and questions
+        if (typeof quiz !== "undefined" && $.type(quiz) === "array") {
+            //add pager
+            $(document.createElement('p')).addClass('pager').attr('id', 'pager').text('Question 1 of ' + quiz.length).appendTo('#frame');
+            //add first question
+            $(document.createElement('h2')).addClass('question').attr('id', 'question').text(quiz[0]['question']).appendTo('#frame');
+            //add image if present
+            if (quiz[0].hasOwnProperty('image') && quiz[0]['image'] != "") {
+                $(document.createElement('img')).addClass('question-image').attr('id', 'question-image').attr('src', quiz[0]['image']).attr('alt', htmlEncode(quiz[0]['question'])).appendTo('#frame');
+            }
+            $(document.createElement('p')).addClass('explanation').attr('id', 'explanation').html('&nbsp;').appendTo('#frame');
+
+            //questions holder
+            $(document.createElement('ul')).attr('id', 'choice-block').appendTo('#frame');
+
+            //add choices
+            addChoices(quiz[0]['choices']);
+
+            //add submit button
+            $(document.createElement('div')).addClass('choice-box').attr('id', 'submitbutton').text('Check Answer').css({
+                'font-weight': 700,
+                'color': '#222',
+                'padding': '30px 0'
+            }).appendTo('#frame');
+
+            setupButtons();
+        }
+    }
+
+
+    init();
+});     
+
+var counter = 0;
+        function step() {
+            counter += 1;
+
+            
+            if (counter >= 3) {
+                document.getElementById('content').className = 'sideB';
+               
+            }
+            if (counter >= 5) {
+                document.getElementById('content').className = 'sideC';
+               
+            }
+            if (counter >= 10) {
+                document.getElementById('content').className = 'sideD';
+               
+            }
+           
+        }
+ 
+        shaker.on("step", function (o) {
+           step();
+        });
+     
+    </script>
+    <style>  
+   
+        #bg-light {
+            background-color: #afc2cb;
+        }
+        
+        .btn {
+            background-color: #c7c7c7;
+            border: none;
+            color: rgb(3, 3, 3);
+            padding: 10px 10px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+}          
+        .btn:hover{
+            box-shadow: 0 12px 16px 0;
+        }
+        #svg{display: block;margin-left: auto; margin-right: auto;}
+        #svg:hover{
+            box-shadow: 0 12px 16px 0;
+        }
+        #svg{
+      
+      animation-name: RÖK;
+      animation-duration: 10000ms;
+      animation-iteration-count: infinite;
+      animation-timing-function: linear;
+        
+        
+    }
+     
+    @keyframes RÖK { 
+      0% { 
+               transform: translate(0px, 800px) ; 
+           } 
+           40%
+            { 
+               transform: translate(-300px, 200px)  ; 
+           }
+           60%
+            { 
+               transform: translate(30px,-50px)  ; 
+           }
+           100%
+            { 
+               transform: translate(300px,200px)  ; 
+           }      
+       } 
+       
+
+       @media screen and (max-width: 414px) {
+        #svg{
+            width: 100%;
+        }
+        .table{
+           width: 100%;
+           left: 0%;
+       }
+       
+        #svg{
+      
+      animation-name: RÖK;
+      animation-duration: 1900ms;
+      animation-iteration-count: infinite;
+      animation-timing-function: linear;
+        
+        
+    }
+     
+    @keyframes RÖK { 
+      0% { 
+               transform: translate(0px, 300px) ; 
+           } 
+          
+       } 
+       #frame {
+           width:100%;
+       }
+       
+       .container {
+            width: 100%;
+       }
+       
+   
+}
+#frame {
+    
+      width:auto;
+      border:14px solid rgb(92, 1, 1);
+      background:rgb(229, 151, 151);
+      padding:10px;
+      margin:3px;
+  }
+  body{
+      background-color: #b2ebf2;
+  }
+  h1 {
+      font:normal bold 2em/1.8em"Helvetica Neue", Helvetica, Arial, sans-serif;
+      text-align:left;
+      border-bottom:1px solid #999;
+      padding:0;
+      width:auto
+  }
+  h2 {
+      font:italic bold 1.3em/1.2em"Helvetica Neue", Helvetica, Arial, sans-serif;
+      padding:0;
+      text-align:center;
+      margin:20px 0;
+  }
+  p.pager {
+      margin:5px 0 5px;
+      font:bold 1em/1em"Helvetica Neue", Helvetica, Arial, sans-serif;
+      color:#790808;
+  }
+  img.question-image {
+      display:block;
+      max-width:250px;
+      margin:10px auto;
+      border:1px solid rgb(4, 23, 32);
+      width:100%;
+      height:auto;
+  }
+  #choice-block {
+      display:block;
+      list-style:none;
+      margin:0;
+      padding:0;
+  }
+  #submitbutton {
+      background:#5a6b8c;
+  }
+  #submitbutton:hover {
+      background:#7b8da6;
+  }
+  #explanation {
+      margin:0 auto;
+      padding:20px;
+      width:75%;
+  }
+  .choice-box {
+      display:block;
+      text-align:center;
+      margin:8px auto;
+      padding:10px 0;
+      border:1px solid #666;
+      cursor:pointer;
+      -webkit-border-radius: 5px;
+      -moz-border-radius: 5px;
+      border-radius: 5px;
+  }
+
+  #page2 h1 {
+      text-align: center;
+      border-bottom: none;
+  }
+  #page3 h1 {
+      text-align: center;
+      border-bottom: none;
+  }
+  #page2 p {
+      text-align: center;
+      border-bottom: none;
+      border:1px solid rgb(98, 243, 14);
+  }
+  .container{
+    border:4px solid rgb(92, 1, 1);
+    padding: 4px;
+    position: relative;
+    top:10px ;
+
+}
+input[id=email], select, textarea {
+    width: 100%;
+    padding: 12px;
+    border-radius: 2px;
+    box-sizing: border-box;
+    margin-top: 6px;
+    margin-bottom: 16px;
+    resize: vertical;
+}
+input[type=submit] {
+    background-color: #c7c7c7;
+    color: rgb(8, 8, 8);
+    padding: 15px 32px;
+    border-radius: 4px;
+    width: 110px;
+    text-align: center;
+    cursor: pointer;
+}
+input[type=submit]:hover {
+    box-shadow: 0 12px 16px 0;
+}
+#content p {
+          
+            color: rgb(8, 8, 8);
+            padding: 15px 32px;
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;    
+        }
+        .sideA {
+            background-color: #FDD;
+            
+        }
+          
+    
+        .sideB {
+            background-color: #DDF;
+            
+        }
+
+        .sideC {
+            background-color: rgb(17, 247, 113);
+            
+        }
+        .sideD {
+            background-color: rgb(17, 90, 247);
+            
+        }
+        .nav{
+            background-color: #81b9bf;
+        }
+        .ptable table{
+	margin: 30px auto;
+	border-collapse: collapse;
+}
+#page5 {
+   background-color: black;
+   bottom: 0%;
+}
+.ptable{
+	margin: 0px 0% 30px 0%;
+}
+
+th, td {
+    padding: 10px;
+}
+
+th{
+	background-color: black;
+	color: #ffe221;
+}
+
+.headin{
+    color: white;
+    text-align: center;
+    border-bottom: none; 
+}
+.table{
+    position: relative;
+    left: 10px;
+    top: 200px;
+}
+.wpos{
+	text-align: center;
+}
+
+.wpos td{
+	color: #77ff21;
+}
+
+.pos{
+	text-align: center;
+}
+
+.pos td{
+	color: #ff7b21;
+}
+
+table .col{
+	border-bottom: 1px solid #FFFFFF;
+}
+
+.wpos:hover{
+	background-color: #77ff21;
+}
+
+.wpos:hover td{
+	color: #000000;
+}
+
+.pos:hover{
+	background-color: #ff7b21;
+}
+
+.pos:hover td{
+	color: #000000;
+}
+       
+    </style>
+</head>
+<body onload="showPage(1);init();endQuiz();setupButtons();nextQuestion();">
+    
+
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+          <div class="navbar-nav">
+            <button id="nav1" class="btn" onclick="showPage(1);">Home</button>
+            <button id="nav1" class="btn" onclick="showPage(5);">Pro Club</button>
+            <button id="nav2" class="btn"  onclick="showPage(2);">About</button>
+            <button id="nav3" class="btn"  onclick="showPage(3);">Contact</button>
+            
+            
+            
+          </div>
+        </div>
+      </nav>
+
+    
+    
+    
+    <div id="page1" class="page">
+      
+      
+    <svg version="1.3"
+        baseProfile="full"
+        width="300" height="200"
+        id="svg"
+        onclick="showPage(4);"
+        
+        >
+   
+     <rect width="100%" height="100%" fill="red" />
+     <circle cx="150" cy="100" r="80" fill="green" />
+     <text x="150" y="125" font-size="60" text-anchor="middle" fill="white">Play</text>
+   
+   </svg>
+        
+
+
+
+    </div>
+    <div id="page2" class="page">
+        <h1>Welcome</h1> 
+        <p>This page is created to play the quiz game have fun and learn capitals of the world.</p>
+        <div id="content" class="sideA">
+            <p>A quiz is a quick and informal assessment of student knowledge. ... A quiz refers to a short test of knowledge, typically around 10 questions in length, with question formats often including multiple choice, fill in the blanks, true or false and short answer.</p>
+        </div>  
+    </div>
+    <div id="page3" class="page">
+        <h1>Welcome</h1>
+         <div class="container">
+            <H1>Contact</H1>
+          <label for="email">Email</label>
+          <input id="email" placeholder="Email">
+  
+          <label for="Country">Country</label>
+          <select name="county" id="Country">
+          <option value="Sweden">Sweden</option>
+          <option value="Usa">Usa</option>
+          <option value="UK">UK</option>
+          </select>
+  
+          <label for="Subject">Subject</label>
+          <textarea name="Subject" id="Subject" style="height:200px"></textarea>
+  
+          <input type="submit" value="Sumbit">
+          </div>
+        
+    </div>
+    <div id="page4" class="page">
+        <div id = "frame"
+        role = "content">
+    </div>
+    </div>
+     
+    <div id="page5" class="page">
+        <div class="ptable">
+            <h1 class="headin">Pro clubs team</h1>
+            <table>
+                <tr class="col">
+                    <th>#</th>
+                    <th>Team</th>
+                    <th>GP</th>
+                    <th>W</th>
+                    <th>D</th>
+                    <th>L</th>
+                    <th>GD</th>
+                    <th>PTS</th>
+                </tr>
+                <tr class="wpos">
+                    <td>1</td>
+                    <td>MOMO</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                </tr>
+                <tr class="wpos">
+                    <td>2</td>
+                    <td>RISTOY</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                </tr>
+                <tr class="wpos">
+                    <td>3</td>
+                    <td>Team3</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                </tr>
+                <tr class="wpos">
+                    <td>4</td>
+                    <td>Team4</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                </tr>
+                <tr class="pos">
+                    <td>5</td>
+                    <td>Team5</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                </tr>
+                <tr class="pos">
+                    <td>6</td>
+                    <td>Team6</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                </tr>
+                <tr class="pos">
+                    <td>7</td>
+                    <td>Team7</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                </tr>
+                <tr class="pos">
+                    <td>8</td>
+                    <td>Team8</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                </tr>
+                <tr class="pos">
+                    <td>9</td>
+                    <td>Team9</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                </tr>
+            </table>
+          </div>
+            
+    
+    
+    
+        </div>
+   
+
+    <audio id="flipSide">
+        <source src="plankton-correct.mp3">
+    </audio>
+    <audio id="flipSide2">
+        <source src="wrong-answer-sound-fx.mp3">
+    </audio>
+</body>
+</html>
